@@ -113,6 +113,23 @@ button { font: inherit; color: inherit; }
 .table .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .result-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
 
+/* ---------- 成績 ---------- */
+.game-tabs { margin: 12px 0; }
+.panel-title { color: var(--cyan); font-weight: 700; font-size: 13px; margin-bottom: 8px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 12px 0 6px; }
+.kpi { background: #05010f; border: 1px solid var(--line); border-radius: 10px; padding: 6px 4px; text-align: center; }
+.kpi-l { font-size: 11px; color: var(--muted); }
+.kpi-v { font-size: 20px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.chart { width: 100%; display: block; }
+.chart-grid { stroke: var(--line); stroke-width: 0.5; }
+.chart-tick { fill: var(--muted); font-size: 9px; }
+.chart-line { fill: none; stroke: var(--cyan); stroke-width: 2; filter: drop-shadow(0 0 3px var(--cyan)); }
+.chart-dot { fill: #fff; stroke: var(--cyan); stroke-width: 1; }
+.chart-avg { stroke: var(--magenta); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.award-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.award-item { display: flex; justify-content: space-between; background: #05010f; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 13px; }
+.award-item b { color: var(--yellow); }
+
 /* ---------- プレイ画面 ---------- */
 .play { max-width: 1100px; margin: 0 auto; padding: 8px 12px; padding-top: max(8px, env(safe-area-inset-top)); min-height: 100vh; user-select: none; -webkit-user-select: none; }
 .play-head { display: flex; align-items: center; gap: 10px; }
