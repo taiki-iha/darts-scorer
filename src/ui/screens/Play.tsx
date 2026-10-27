@@ -67,7 +67,7 @@ function pickEffect(prev: MatchState, next: MatchState, d: Dart | null): { effec
 }
 
 function sfxFor(e: Effect | null, d: Dart | null): SfxName {
-  if (!e) return d && (d.ring === 'T' || d.ring === 'D') ? 'hitHigh' : 'hit';
+  if (!e) return d?.ring === 'T' ? 'hitTriple' : d?.ring === 'D' ? 'hitDouble' : 'hit';
   if (e === 'BULL') return 'bull';
   if (e === 'BUST') return 'bust';
   if (e === 'WIN' || e === 'GAME_SHOT') return 'win';
@@ -103,8 +103,17 @@ export function Play({ db, current, settings, onFinished, onQuit }: Props) {
       () => setSaveError(false),
       () => setSaveError(true),
     );
+    const before = replay(config, prev);
+    const after = replay(config, next);
+    // 同じレグの中で次の人に替わったら「ぷるるっ」
+    const changed =
+      next.length > prev.length &&
+      before.leg === after.leg &&
+      !after.legOver &&
+      (before.turnPos !== after.turnPos || before.round !== after.round);
+    if (changed && settings.sfx) playSfx('change', settings.volume);
     if (effectFor === undefined) return;
-    const picked = pickEffect(replay(config, prev), replay(config, next), effectFor);
+    const picked = pickEffect(before, after, effectFor);
     if (settings.sfx && (picked || effectFor)) playSfx(sfxFor(picked?.effect ?? null, effectFor), settings.volume);
     if (settings.announce && picked) announce(picked.effect, settings.volume, picked.effect === 'BUST' ? 150 : 450);
     setFx(picked && settings.effects !== 'off' ? picked : null);

@@ -166,7 +166,13 @@ function sparkle(o: Out, at: number, count: number, base = 1047) {
   }
 }
 
-export type SfxName = 'hit' | 'hitHigh' | 'bull' | 'bust' | 'award' | 'bigAward' | 'win';
+/** 「てゅー」1回分: 高い音から急に下がるレーザー音（矩形波＋サイン波） */
+function tyu(o: Out, at: number, len: number, top: number) {
+  osc(o, 'square', top, top * 0.35, at, 0.004, len, 0.1);
+  osc(o, 'sine', top * 1.5, top * 0.5, at, 0.004, len, 0.14);
+}
+
+export type SfxName = 'hit' | 'hitDouble' | 'hitTriple' | 'bull' | 'bust' | 'award' | 'bigAward' | 'win' | 'change';
 
 export function playSfx(name: SfxName, volume: number): void {
   switch (name) {
@@ -178,14 +184,49 @@ export function playSfx(name: SfxName, volume: number): void {
       noise(o, 'bandpass', 2500, 900, o.t, 0.001, 0.05, 0.6, 1.2);
       break;
     }
-    case 'hitHigh': {
-      // ダブル・トリプル: 重さ＋キラッ
-      const o = output(volume, 0.3);
+    case 'hitDouble':
+    case 'hitTriple': {
+      // 「てゅーてゅーてゅー」: 音程が下がる電子音をすばやく繰り返す（ダブルは2回）
+      const o = output(volume, 0.35);
       if (!o) return;
       osc(o, 'sine', 180, 60, o.t, 0.002, 0.09, 0.8);
       noise(o, 'bandpass', 2500, 900, o.t, 0.001, 0.05, 0.6, 1.2);
-      osc(o, 'triangle', 1568, 1760, o.t + 0.02, 0.003, 0.22, 0.22);
-      osc(o, 'sine', 2349, 2349, o.t + 0.05, 0.003, 0.25, 0.12);
+      const n = name === 'hitTriple' ? 3 : 2;
+      for (let i = 0; i < n; i++) {
+        const at = o.t + 0.04 + i * 0.1;
+        const last = i === n - 1;
+        const len = last ? 0.22 : 0.08;
+        tyu(o, at, len, name === 'hitTriple' ? 2400 : 2000);
+      }
+      break;
+    }
+    case 'change': {
+      // 「ぷるるっ」: 震える短い電子音
+      const o = output(volume, 0.2);
+      if (!o) return;
+      const { c } = o;
+      const s = c.createOscillator();
+      const lfo = c.createOscillator();
+      const depth = c.createGain();
+      const g = c.createGain();
+      s.type = 'square';
+      s.frequency.setValueAtTime(880, o.t);
+      s.frequency.exponentialRampToValueAtTime(1100, o.t + 0.28);
+      lfo.frequency.value = 28;
+      depth.gain.value = 140;
+      lfo.connect(depth).connect(s.frequency);
+      const f = c.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.value = 2600;
+      g.gain.setValueAtTime(0.0001, o.t);
+      g.gain.exponentialRampToValueAtTime(0.16, o.t + 0.015);
+      g.gain.setValueAtTime(0.16, o.t + 0.2);
+      g.gain.exponentialRampToValueAtTime(0.0001, o.t + 0.32);
+      s.connect(f).connect(g).connect(o.dry);
+      s.start(o.t);
+      lfo.start(o.t);
+      s.stop(o.t + 0.35);
+      lfo.stop(o.t + 0.35);
       break;
     }
     case 'bull': {
