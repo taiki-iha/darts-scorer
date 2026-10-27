@@ -16,7 +16,8 @@ function ac(): AudioContext | null {
 export function unlockAudio(): void {
   const c = ac();
   if (!c) return;
-  if (c.state === 'suspended') void c.resume();
+  // iOS は通話・アプリ切替の後 'interrupted' になるので running 以外は再開を試みる
+  if (c.state !== 'running') void c.resume();
   // 無音を1つ鳴らしてアンロックを確実にする
   const o = c.createOscillator();
   const g = c.createGain();
@@ -60,7 +61,8 @@ export type SfxName = 'hit' | 'bull' | 'bust' | 'award' | 'bigAward' | 'win';
 export function playSfx(name: SfxName, volume: number): void {
   const c = ac();
   if (!c || volume <= 0) return;
-  if (c.state === 'suspended') void c.resume();
+  // iOS は通話・アプリ切替の後 'interrupted' になるので running 以外は再開を試みる
+  if (c.state !== 'running') void c.resume();
   const out = c.createGain();
   out.gain.value = volume;
   out.connect(c.destination);

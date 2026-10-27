@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { unlockAudio } from '../audio/sfx';
 import type { GameId, GameOptions } from '../games/types';
+import { recordFromCurrent } from '../match/input';
 import type { MatchConfig } from '../match/types';
 import { openDb, type CurrentMatch, type Db, type MatchRecord, type Player, type Settings } from '../storage/db';
 import { GameSelect } from './screens/GameSelect';
@@ -38,6 +39,12 @@ export function App() {
 
   const start = async (config: MatchConfig) => {
     unlockAudio();
+    if (ctx.current) {
+      // 決着済みで「結果を見る」を押さずに抜けた試合は、記録として残してから置き換える
+      const rec = recordFromCurrent(ctx.current, Date.now());
+      if (rec) await db.putMatch(rec);
+      else if (!confirm('中断中のゲームがあります。破棄して新しいゲームを始めますか？')) return;
+    }
     const current: CurrentMatch = { id: crypto.randomUUID(), startedAt: Date.now(), config, events: [] };
     await db.setCurrent(current);
     setCtx({ ...ctx, current });

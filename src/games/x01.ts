@@ -92,10 +92,11 @@ function finalRank(d: Dart, out: InOut): number {
 /** 20 のセグメント以外の準備ダーツの本数（少ないほど狙いやすい） */
 const offTwenty = (ds: Dart[]) => ds.filter((d) => d.num !== 20).length;
 
-export function checkoutHint(remaining: number, out: InOut, bull: BullMode): string[] | null {
+/** maxDarts: このターンで残っている投数（1〜3） */
+export function checkoutHint(remaining: number, out: InOut, bull: BullMode, maxDarts = 3): string[] | null {
   if (remaining > 170 || remaining < 1) return null;
   const finals = ALL_DARTS.filter((d) => qualifies(d, out));
-  for (let n = 1; n <= 3; n++) {
+  for (let n = 1; n <= Math.min(3, maxDarts); n++) {
     let best: { darts: Dart[]; key: number[] } | null = null;
     const search = (prefix: Dart[], left: number) => {
       if (prefix.length === n - 1) {

@@ -1,5 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { BullMode } from '../core/types';
+import { GAMES } from '../games/registry';
+import { replay } from '../match/engine';
 import type { MatchConfig, MatchEvent } from '../match/types';
 
 export interface Player {
@@ -63,16 +65,35 @@ export interface Db {
   clearAll(): Promise<void>;
 }
 
+const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object';
+
+function isPlayer(p: unknown): boolean {
+  return isObj(p) && typeof p.id === 'string' && typeof p.name === 'string';
+}
+
+/** 試合記録として読めるか（最後まで再生できるか）まで確かめる */
+function isMatch(m: unknown): boolean {
+  if (!isObj(m) || typeof m.id !== 'string' || typeof m.finishedAt !== 'number' || !Array.isArray(m.events)) return false;
+  const c = m.config;
+  if (!isObj(c) || typeof c.gameId !== 'string' || !(c.gameId in GAMES) || !Array.isArray(c.sides)) return false;
+  try {
+    replay(c as unknown as MatchConfig, m.events as MatchEvent[]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function isExportData(d: unknown): d is ExportData {
-  if (!d || typeof d !== 'object') return false;
-  const x = d as Record<string, unknown>;
+  if (!isObj(d)) return false;
   return (
-    x.app === 'darts-scorer' &&
-    x.version === 1 &&
-    Array.isArray(x.players) &&
-    Array.isArray(x.matches) &&
-    !!x.settings &&
-    typeof x.settings === 'object'
+    d.app === 'darts-scorer' &&
+    d.version === 1 &&
+    Array.isArray(d.players) &&
+    d.players.every(isPlayer) &&
+    Array.isArray(d.matches) &&
+    d.matches.every(isMatch) &&
+    isObj(d.settings)
   );
 }
 
@@ -109,13 +130,24 @@ export async function openDb(name = 'darts-scorer'): Promise<Db> {
     async importAll(d) {
       if (!isExportData(d)) throw new Error('invalid file');
       const tx = idb.transaction(['players', 'matches', 'kv'], 'readwrite');
-      await Promise.all([tx.objectStore('players').clear(), tx.objectStore('matches').clear(), tx.objectStore('kv').clear()]);
-      await Promise.all([
-        ...d.players.map((p) => tx.objectStore('players').put(p)),
-        ...d.matches.map((m) => tx.objectStore('matches').put(m)),
-        tx.objectStore('kv').put({ ...DEFAULT_SETTINGS, ...d.settings }, 'settings'),
-      ]);
-      await tx.done;
+      tx.done.catch(() => {}); // 中止時の reject は下の catch で扱う
+      try {
+        await Promise.all([tx.objectStore('players').clear(), tx.objectStore('matches').clear(), tx.objectStore('kv').clear()]);
+        await Promise.all([
+          ...d.players.map((p) => tx.objectStore('players').put(p)),
+          ...d.matches.map((m) => tx.objectStore('matches').put(m)),
+          tx.objectStore('kv').put({ ...DEFAULT_SETTINGS, ...d.settings }, 'settings'),
+        ]);
+        await tx.done;
+      } catch {
+        // 途中で失敗したら消去も含めて取り消す
+        try {
+          tx.abort();
+        } catch {
+          // すでに中止済み
+        }
+        throw new Error('invalid file');
+      }
     },
     async clearAll() {
       const tx = idb.transaction(['players', 'matches', 'kv'], 'readwrite');

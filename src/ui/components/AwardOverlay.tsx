@@ -42,7 +42,7 @@ export function AwardOverlay({ effect, sub, onDone, level }: Props) {
   if (!effect || level === 'off') return null;
   const k = kind(effect);
   return (
-    <div class={`fx fx-${k} ${level === 'lite' ? 'fx-lite' : ''}`} onPointerDown={onDone}>
+    <div class={`fx fx-${k} ${level === 'lite' ? 'fx-lite' : ''}`} onClick={onDone}>
       {level === 'full' && k !== 'small' && (
         <div class="fx-rays">
           {Array.from({ length: 12 }, (_, i) => (

@@ -132,6 +132,7 @@ button { font: inherit; color: inherit; }
 
 /* ---------- プレイ画面 ---------- */
 .play { max-width: 1100px; margin: 0 auto; padding: 8px 12px; padding-top: max(8px, env(safe-area-inset-top)); min-height: 100vh; user-select: none; -webkit-user-select: none; }
+.save-error { background: #4a0010; border: 1px solid #ff4d6d; color: #ffd0d8; border-radius: 8px; padding: 6px 10px; font-size: 13px; margin-bottom: 6px; }
 .play-head { display: flex; align-items: center; gap: 10px; }
 .play-title { display: flex; gap: 12px; align-items: baseline; font-weight: 700; color: var(--muted); }
 .play-title .neon-c { font-size: 22px; }

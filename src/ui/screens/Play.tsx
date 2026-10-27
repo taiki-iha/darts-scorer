@@ -10,6 +10,7 @@ import type { X01Options } from '../../games/types';
 import { checkoutHint, type X01State } from '../../games/x01';
 import { DIGIT_WAIT_MS, flush, initialKeyState, onKey, type KeyAction } from '../../input/keyboard';
 import { currentPlayer, currentSide, replay } from '../../match/engine';
+import { addDart, addNext, recordFromCurrent, undoLast } from '../../match/input';
 import type { MatchEvent, MatchState } from '../../match/types';
 import type { CurrentMatch, Db, MatchRecord, Settings } from '../../storage/db';
 import { AwardOverlay, type Effect } from '../components/AwardOverlay';
@@ -74,53 +75,48 @@ function sfxFor(e: Effect | null): SfxName {
 
 export function Play({ db, current, settings, onFinished, onQuit }: Props) {
   const [events, setEvents] = useState<MatchEvent[]>(current.events);
+  // 1回のキー入力で複数の操作が続けて来ても取りこぼさないよう、最新のイベント列は ref で同期的に持つ
+  const eventsRef = useRef(events);
   const [fx, setFx] = useState<{ effect: Effect; sub?: string } | null>(null);
+  const [saveError, setSaveError] = useState(false);
   const state = useMemo(() => replay(current.config, events), [events]);
   const family = GAMES[current.config.gameId].family;
+  const config = current.config;
 
   const commit = (next: MatchEvent[], effectFor?: Dart | null) => {
+    const prev = eventsRef.current;
+    if (next === prev) return;
+    eventsRef.current = next;
     setEvents(next);
-    void db.setCurrent({ ...current, events: next });
+    db.setCurrent({ ...current, events: next }).then(
+      () => setSaveError(false),
+      () => setSaveError(true),
+    );
     if (effectFor === undefined) return;
-    const after = replay(current.config, next);
-    const picked = pickEffect(state, after, effectFor);
+    const picked = pickEffect(replay(config, prev), replay(config, next), effectFor);
     if (settings.sfx && (picked || effectFor)) playSfx(sfxFor(picked?.effect ?? null), settings.volume);
     setFx(picked && settings.effects !== 'off' ? picked : null);
   };
 
   const onDart = (d: Dart) => {
-    if (fx) setFx(null);
-    if (state.matchOver || state.legOver) return;
-    // 手番終了後にボードを押したら、次の手番の1投目として扱う
-    const base = state.turnComplete ? [...events, NEXT] : events;
-    commit([...base, { t: 'dart', d }], d);
+    setFx(null);
+    commit(addDart(config, eventsRef.current, d), d);
   };
 
   const onNext = () => {
-    if (fx) setFx(null);
-    if (state.matchOver) return;
-    commit([...events, NEXT], state.legOver ? undefined : null);
+    setFx(null);
+    const legOver = replay(config, eventsRef.current).legOver;
+    commit(addNext(config, eventsRef.current), legOver ? undefined : null);
   };
 
-  /** 1投戻す。末尾の 'next' は投擲ではないので一緒に取り除く */
   const onUndo = () => {
     setFx(null);
-    const next = [...events];
-    while (next.length && next[next.length - 1].t === 'next') next.pop();
-    next.pop();
-    commit(next);
+    commit(undoLast(eventsRef.current));
   };
 
   const finish = async () => {
-    const rec: MatchRecord = {
-      id: current.id,
-      startedAt: current.startedAt,
-      finishedAt: Date.now(),
-      config: current.config,
-      events,
-      legWins: state.legWins,
-      winner: state.matchWinner,
-    };
+    const rec = recordFromCurrent({ ...current, events: eventsRef.current }, Date.now());
+    if (!rec) return;
     await db.putMatch(rec);
     await db.setCurrent(null);
     onFinished(rec);
@@ -129,7 +125,7 @@ export function Play({ db, current, settings, onFinished, onQuit }: Props) {
   // 自動で次の手番へ
   useEffect(() => {
     if (fx || !settings.autoAdvance || !state.turnComplete || state.legOver) return;
-    const t = setTimeout(() => commit([...events, NEXT]), AUTO_ADVANCE_MS);
+    const t = setTimeout(() => commit([...eventsRef.current, NEXT]), AUTO_ADVANCE_MS);
     return () => clearTimeout(t);
   }, [fx, state, events]);
 
@@ -149,7 +145,10 @@ export function Play({ db, current, settings, onFinished, onQuit }: Props) {
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === ' ' || e.key === 'Backspace') e.preventDefault();
+      // キー押しっぱなしで連続入力しない
+      if (e.repeat) return;
+      // フォーカス中のボタンの既定動作（Enter でクリック等）と二重に動かないようにする
+      if ([' ', 'Backspace', 'Enter', 'Escape'].includes(e.key)) e.preventDefault();
       clearTimeout(timer);
       const r = onKey(ks, e.key, e.shiftKey, Date.now());
       ks = r.state;
@@ -177,12 +176,18 @@ export function Play({ db, current, settings, onFinished, onQuit }: Props) {
   const turnTotal = family === 'cricket' ? null : state.turnDarts.reduce((a, d) => a + points(d, bullOf(state)), 0);
   const hint =
     family === 'x01' && !state.turnComplete
-      ? checkoutHint(scores[side], (state.config.options as X01Options).out, bullOf(state))
+      ? checkoutHint(scores[side], (state.config.options as X01Options).out, bullOf(state), 3 - state.turnDarts.length)
       : null;
   const showMember = state.config.mode === 'team';
 
   return (
-    <div class="play" onPointerDown={unlockAudio}>
+    <div
+      class="play"
+      onPointerDown={unlockAudio}
+      // ボタンにフォーカスを残さない（残ると Enter キーでクリックが二重に起きる）
+      onMouseDown={(e) => (e.target as Element).closest('button') && e.preventDefault()}
+    >
+      {saveError && <div class="save-error">保存できませんでした。この端末の空き容量やプライベートモードを確認してください。</div>}
       <header class="play-head">
         <button class="icon-btn" onClick={() => confirm('中断してホームに戻りますか？（続きから再開できます）') && onQuit()}>
           ✕

@@ -104,4 +104,22 @@ describe('export / import', () => {
     await expect(db.importAll({ app: 'darts-scorer', version: 1, players: 'x', matches: [], settings: {} })).rejects.toThrow('invalid file');
     expect((await db.listPlayers()).map((p) => p.id)).toEqual(['a']);
   });
+  test('malformed elements are rejected and existing data kept', async () => {
+    const db = await fresh();
+    await db.putPlayer(player('a'));
+    await db.putMatch(match('m1', 1000));
+    const base = { app: 'darts-scorer', version: 1, exportedAt: 0, settings: DEFAULT_SETTINGS };
+    // id のないプレイヤー
+    await expect(db.importAll({ ...base, players: [{ name: 'x' }], matches: [] })).rejects.toThrow('invalid file');
+    // 知らないゲーム
+    await expect(
+      db.importAll({ ...base, players: [], matches: [{ ...match('m2', 1), config: { ...config, gameId: 'golf' } }] }),
+    ).rejects.toThrow('invalid file');
+    // events がない
+    await expect(db.importAll({ ...base, players: [], matches: [{ ...match('m3', 1), events: undefined }] })).rejects.toThrow(
+      'invalid file',
+    );
+    expect((await db.listPlayers()).map((p) => p.id)).toEqual(['a']);
+    expect((await db.listMatches()).map((m) => m.id)).toEqual(['m1']);
+  });
 });

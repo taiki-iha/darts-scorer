@@ -105,6 +105,12 @@ describe('checkoutHint', () => {
     expect(checkoutHint(60, 'double', 'fat')).toEqual(['20', 'D20']);
     expect(checkoutHint(1, 'double', 'fat')).toBeNull();
   });
+  test('respects darts left in the turn', () => {
+    expect(checkoutHint(100, 'double', 'fat', 1)).toBeNull();
+    expect(checkoutHint(100, 'double', 'fat', 2)).toEqual(['T20', 'D20']);
+    expect(checkoutHint(40, 'double', 'fat', 1)).toEqual(['D20']);
+    expect(checkoutHint(170, 'double', 'fat', 2)).toBeNull();
+  });
   test('open out', () => {
     expect(checkoutHint(50, 'open', 'fat')).toEqual(['BULL']);
     expect(checkoutHint(180, 'open', 'fat')).toBeNull();
