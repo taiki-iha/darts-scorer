@@ -6,7 +6,9 @@ import type { Dart } from '../../core/types';
 /** viewBox の半分の幅（数字リングまで入る） */
 const VIEW = 1.3;
 const LOUPE_ZOOM = 2.5;
-const LOUPE_R = 0.32; // 画面上のルーペ半径（ボード座標）
+const LOUPE_PX = 132; // ルーペの直径（画面ピクセル）
+const LOUPE_GAP = 56; // 指先からルーペ下端までのすき間（画面ピクセル）。指の腹に隠れないよう広めに
+const LOUPE_LABEL = 32; // ルーペ上のラベルの高さ
 const STEP = (Math.PI * 2) / 20;
 
 function arc(r1: number, r2: number, a1: number, a2: number) {
@@ -78,7 +80,8 @@ interface Props {
 
 export function Board({ onDart, highlight = [], target, disabled }: Props) {
   const ref = useRef<SVGSVGElement>(null);
-  const [touch, setTouch] = useState<{ x: number; y: number } | null>(null);
+  // x, y はボード座標、cx, cy は画面上の位置、unitPx はボード座標1あたりの画面ピクセル
+  const [touch, setTouch] = useState<{ x: number; y: number; cx: number; cy: number; unitPx: number } | null>(null);
   const shapes = useMemo(() => <BoardShapes />, []);
 
   const toBoard = (e: PointerEvent) => {
@@ -86,6 +89,9 @@ export function Board({ onDart, highlight = [], target, disabled }: Props) {
     return {
       x: ((e.clientX - rect.left) / rect.width) * 2 * VIEW - VIEW,
       y: ((e.clientY - rect.top) / rect.height) * 2 * VIEW - VIEW,
+      cx: e.clientX,
+      cy: e.clientY,
+      unitPx: rect.width / (2 * VIEW),
     };
   };
 
@@ -106,9 +112,13 @@ export function Board({ onDart, highlight = [], target, disabled }: Props) {
   const cancel = () => setTouch(null);
 
   const current = touch ? hitTest(touch.x, touch.y) : null;
-  // ルーペは指の上側に出す。上端からはみ出す場合は下側
-  const loupeY = touch ? (touch.y - 0.55 < -VIEW + LOUPE_R ? touch.y + 0.55 : touch.y - 0.55) : 0;
-  const zoomR = LOUPE_R / LOUPE_ZOOM;
+  // ルーペはボードの外（画面に固定）に描き、どこを押しても常に指の真上に出す
+  const loupe = touch && {
+    left: touch.cx - LOUPE_PX / 2,
+    top: Math.max(4, touch.cy - LOUPE_GAP - LOUPE_PX - LOUPE_LABEL),
+    // ルーペに映すボード座標の幅
+    span: LOUPE_PX / touch.unitPx / LOUPE_ZOOM,
+  };
 
   return (
     <div class="board-wrap">
@@ -121,11 +131,6 @@ export function Board({ onDart, highlight = [], target, disabled }: Props) {
         onPointerUp={up}
         onPointerCancel={cancel}
       >
-        <defs>
-          <clipPath id="loupe-clip">
-            <circle r={LOUPE_R} />
-          </clipPath>
-        </defs>
         {shapes}
         {target && areaPath(target) && <path d={areaPath(target)!} class="board-target" />}
         {highlight.map((d, i) => {
@@ -133,22 +138,22 @@ export function Board({ onDart, highlight = [], target, disabled }: Props) {
           return path ? <path key={i} d={path} class="board-hit" /> : null;
         })}
         {current && current.ring !== 'MISS' && <path d={areaPath(current)!} class="board-hover" />}
-        {touch && (
-          <g transform={`translate(${touch.x} ${loupeY})`} pointer-events="none">
-            <circle r={LOUPE_R + 0.015} fill="#000" stroke="var(--magenta)" stroke-width="0.015" />
-            <g clip-path="url(#loupe-clip)">
-              <g transform={`scale(${LOUPE_ZOOM}) translate(${-touch.x} ${-touch.y})`}>
-                {shapes}
-                {current && current.ring !== 'MISS' && <path d={areaPath(current)!} class="board-hover" />}
-                <circle cx={touch.x} cy={touch.y} r={zoomR * 0.08} fill="#fff" />
-              </g>
-            </g>
-            <text y={LOUPE_R + 0.13} class="loupe-label" text-anchor="middle">
-              {current ? label(current) : ''}
-            </text>
-          </g>
-        )}
       </svg>
+      {touch && loupe && (
+        <div class="loupe" style={{ left: `${loupe.left}px`, top: `${loupe.top}px`, width: `${LOUPE_PX}px` }}>
+          <div class="loupe-label">{current ? label(current) : ''}</div>
+          <svg
+            class="loupe-view"
+            width={LOUPE_PX}
+            height={LOUPE_PX}
+            viewBox={`${touch.x - loupe.span / 2} ${touch.y - loupe.span / 2} ${loupe.span} ${loupe.span}`}
+          >
+            {shapes}
+            {current && current.ring !== 'MISS' && <path d={areaPath(current)!} class="board-hover" />}
+            <circle cx={touch.x} cy={touch.y} r={loupe.span * 0.025} fill="#fff" stroke="#000" stroke-width={loupe.span * 0.008} />
+          </svg>
+        </div>
+      )}
     </div>
   );
 }

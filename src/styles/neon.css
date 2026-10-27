@@ -182,7 +182,12 @@ button { font: inherit; color: inherit; }
 .board { width: 100%; display: block; touch-action: none; cursor: crosshair; }
 .board-hit { fill: #fff; opacity: 0.55; }
 .board-hover { fill: var(--yellow); opacity: 0.6; }
-.loupe-label { fill: #fff; font-size: 0.14px; font-weight: 900; paint-order: stroke; stroke: #000; stroke-width: 0.03px; }
+.loupe { position: fixed; z-index: 30; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.loupe-view { border-radius: 50%; border: 3px solid var(--magenta); background: #000; box-shadow: 0 0 16px #ff2bd699, 0 4px 14px #000c; display: block; }
+.loupe-label {
+  min-width: 56px; padding: 1px 10px; border-radius: 999px; background: #000d; border: 1px solid var(--yellow);
+  color: #fff; font-weight: 900; font-size: 18px; text-align: center; text-shadow: 0 0 6px var(--yellow); min-height: 26px;
+}
 
 .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; padding-bottom: env(safe-area-inset-bottom); }
 
