@@ -122,6 +122,27 @@ describe('teams', () => {
   });
 });
 
+describe('records for stats', () => {
+  test('x01 throws carry scored points, bust turns score 0', () => {
+    const cfg = single(['A', 'B'], { options: { ...x01.defaults(), start: 301 } });
+    const s = run(cfg, [T20, T20, T20, NEXT, MISS, NEXT, T20, T20, T20]);
+    expect(s.throws.map((t) => t.points)).toEqual([60, 60, 60, 0, 0, 0, 0]);
+  });
+  test('double-in darts before opening score 0', () => {
+    const cfg = single(['A'], { options: { ...x01.defaults(), in: 'double' } });
+    const s = run(cfg, [D(dart('S', 20)), D(dart('D', 20)), D(dart('S', 5))]);
+    expect(s.throws.map((t) => t.points)).toEqual([0, 40, 5]);
+  });
+  test('count-up throws carry points', () => {
+    const cfg: MatchConfig = { ...single(['A']), gameId: 'countup', options: { rounds: 8 } };
+    expect(run(cfg, [D(dart('SB')), T20]).throws.map((t) => t.points)).toEqual([50, 60]);
+  });
+  test('turns history keeps every completed turn', () => {
+    const s = run(single(['A', 'B']), [T20, T20, T20, NEXT, MISS, NEXT, T20]);
+    expect(s.turns.map((t) => [t.player.name, t.darts.length])).toEqual([['A', 3], ['B', 1]]);
+  });
+});
+
 describe('cricket summary', () => {
   test('lastTurn carries closedBefore and marks; throws carry marks', () => {
     const cfg: MatchConfig = { ...single(['A', 'B']), gameId: 'cricket', options: { maxRounds: 20 } };

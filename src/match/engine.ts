@@ -59,6 +59,7 @@ export function newMatch(config: MatchConfig): MatchState {
     game: null,
     throws: [],
     lastTurn: null,
+    turns: [],
   };
   return startLeg(base, 0);
 }
@@ -95,13 +96,23 @@ function summary(s: MatchState, bust: boolean, finished: boolean): TurnSummary {
 }
 
 /** ターンを完了させる。最終ラウンドの最後の手番ならラウンド上限で勝敗を決める */
+function withTurn(s: MatchState, t: TurnSummary): MatchState {
+  return { ...s, turnComplete: true, lastTurn: t, turns: [...s.turns, t] };
+}
+
 function completeTurn(s: MatchState, bust: boolean): MatchState {
-  s = { ...s, turnComplete: true, lastTurn: summary(s, bust, false) };
+  s = withTurn(s, summary(s, bust, false));
   const lastInRound = s.turnPos === s.order.length - 1;
   if (lastInRound && s.round >= ruleOf(s).maxRounds(s.config.options)) {
     return endLeg(s, ruleOf(s).limitWinners(s.game));
   }
   return s;
+}
+
+/** 01 は減った点、カウントアップは合計点を「得点」として比較できる値にする */
+function scoreOf(s: MatchState, game: unknown, side: number): number {
+  if (s.config.gameId === 'x01') return -(game as { remaining: number[] }).remaining[side];
+  return (game as { total: number[] }).total[side];
 }
 
 function applyDart(s: MatchState, d: Dart): MatchState {
@@ -120,17 +131,18 @@ function applyDart(s: MatchState, d: Dart): MatchState {
     bust: false,
   };
   if (isCricket(s)) rec.marks = (r.state as CricketState).turnMarks - (before as CricketState).turnMarks;
+  else rec.points = scoreOf(s, r.state, side) - scoreOf(s, before, side);
 
   let throws = [...s.throws, rec];
   if (r.bust) {
     // このターンの投擲をすべて bust 扱いにする
     const k = s.turnDarts.length + 1;
-    throws = throws.map((t, i) => (i >= throws.length - k ? { ...t, bust: true } : t));
+    throws = throws.map((t, i) => (i >= throws.length - k ? { ...t, bust: true, points: 0 } : t));
   }
   let next: MatchState = { ...s, game: r.state, throws, turnDarts: [...s.turnDarts, d] };
 
   if (r.finished) {
-    next = { ...next, turnComplete: true, lastTurn: summary(next, false, true) };
+    next = withTurn(next, summary(next, false, true));
     return endLeg(next, [side]);
   }
   if (r.bust || next.turnDarts.length === 3) return completeTurn(next, !!r.bust);

@@ -30,6 +30,8 @@ export interface ThrowRecord {
   bust: boolean;
   /** クリケットのみ: この1投の有効マーク数 */
   marks?: number;
+  /** 01・カウントアップのみ: この1投で減った/増えた点（bust ターンは0） */
+  points?: number;
 }
 
 export interface TurnSummary {
@@ -66,4 +68,6 @@ export interface MatchState {
   throws: ThrowRecord[];
   /** 演出判定用（直前に完了したターン） */
   lastTurn: TurnSummary | null;
+  /** 完了したターンの履歴（全レグ）。成績のアワード集計に使う */
+  turns: TurnSummary[];
 }
