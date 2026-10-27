@@ -201,32 +201,16 @@ export function playSfx(name: SfxName, volume: number): void {
       break;
     }
     case 'change': {
-      // 「ぷるるっ」: 震える短い電子音
-      const o = output(volume, 0.2);
+      // プレイヤーチェンジ: 短い電子音を高い方から一気に下げて並べ（約0.4秒）、長い残響で余韻を残す
+      const o = output(volume, 0.9);
       if (!o) return;
-      const { c } = o;
-      const s = c.createOscillator();
-      const lfo = c.createOscillator();
-      const depth = c.createGain();
-      const g = c.createGain();
-      s.type = 'square';
-      s.frequency.setValueAtTime(880, o.t);
-      s.frequency.exponentialRampToValueAtTime(1100, o.t + 0.28);
-      lfo.frequency.value = 28;
-      depth.gain.value = 140;
-      lfo.connect(depth).connect(s.frequency);
-      const f = c.createBiquadFilter();
-      f.type = 'lowpass';
-      f.frequency.value = 2600;
-      g.gain.setValueAtTime(0.0001, o.t);
-      g.gain.exponentialRampToValueAtTime(0.16, o.t + 0.015);
-      g.gain.setValueAtTime(0.16, o.t + 0.2);
-      g.gain.exponentialRampToValueAtTime(0.0001, o.t + 0.32);
-      s.connect(f).connect(g).connect(o.dry);
-      s.start(o.t);
-      lfo.start(o.t);
-      s.stop(o.t + 0.35);
-      lfo.stop(o.t + 0.35);
+      const steps = 9;
+      for (let k = 0; k < steps; k++) {
+        const at = o.t + k * 0.042;
+        const f = 1900 * Math.pow(0.5, (k / (steps - 1)) * 1.3);
+        osc(o, 'square', f, f * 0.94, at, 0.003, 0.05, 0.09);
+        osc(o, 'sine', f * 2, f * 1.9, at, 0.003, 0.06, 0.07);
+      }
       break;
     }
     case 'bull': {
