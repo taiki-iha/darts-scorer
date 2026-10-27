@@ -1,0 +1,30 @@
+:root {
+  --bg: #05010f;
+  --bg2: #1a0b3d;
+  --panel: #0d0730;
+  --line: #3a2a7a;
+  --cyan: #00e5ff;
+  --magenta: #ff2bd6;
+  --yellow: #ffe14d;
+  --text: #e8f6ff;
+  --muted: #9a8fc7;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: radial-gradient(circle at 50% 30%, var(--bg2), var(--bg) 70%) fixed;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+#app { min-height: 100%; }
+.screen { max-width: 720px; margin: 0 auto; padding: 16px; padding-top: max(16px, env(safe-area-inset-top)); }
+.center { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+.neon-title {
+  font-size: 56px; font-weight: 900; letter-spacing: 6px; margin: 0;
+  color: #fff;
+  text-shadow: 0 0 6px var(--magenta), 0 0 18px var(--magenta), 0 0 36px var(--cyan);
+}
