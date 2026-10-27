@@ -20,6 +20,8 @@ body {
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
 }
+/* 連続タップで画面が拡大されないようにする（ピンチでの拡大は残す） */
+html { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
 #app { min-height: 100%; }
 .screen { max-width: 720px; margin: 0 auto; padding: 16px; padding-top: max(16px, env(safe-area-inset-top)); }
 .center { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
@@ -240,3 +242,31 @@ button { font: inherit; color: inherit; }
 @keyframes fx-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-14px); } 40% { transform: translateX(12px); } 60% { transform: translateX(-8px); } 80% { transform: translateX(5px); } }
 @keyframes fx-spin { to { transform: rotate(360deg); } }
 @keyframes fx-spark { from { transform: rotate(var(--a)) translateX(0); opacity: 1; } to { transform: rotate(var(--a)) translateX(42vmin); opacity: 0; } }
+
+/* ---------- スマホ横向き：スクロールさせず1画面に収める ---------- */
+/* 高さが低い横向き画面だけが対象（PC やタブレットは今まで通り）。
+   100dvh は Chrome のアドレスバーを除いた実際に見えている高さ */
+@media (orientation: landscape) and (max-height: 560px) {
+  .play {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 4px max(10px, env(safe-area-inset-right)) 4px max(10px, env(safe-area-inset-left));
+  }
+  .play-head .icon-btn { width: 30px; height: 30px; }
+  .play-title .neon-c { font-size: 18px; }
+  .play-body { flex: 1; min-height: 0; grid-template-columns: 1fr auto; gap: 10px; margin-top: 2px; align-items: stretch; }
+  .play-info { min-height: 0; overflow-y: auto; }
+  .now-score { font-size: 44px; }
+  .throws { margin-top: 6px; }
+  .throw { padding: 5px 0; font-size: 16px; }
+  .checkout-darts { font-size: 20px; }
+  .play-board { display: flex; align-items: center; gap: 8px; min-height: 0; }
+  /* ボードは画面の高さに合わせた正方形（ヘッダー分を引く） */
+  .board-wrap { width: min(calc(100vh - 48px), 52vw); width: min(calc(100dvh - 48px), 52vw); max-width: none; }
+  .actions { grid-template-columns: 1fr; width: 88px; margin-top: 0; }
+  .actions .btn { padding: 14px 6px; }
+  .leg-panel { left: auto; right: 12px; max-width: 360px; }
+}

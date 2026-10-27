@@ -70,6 +70,18 @@ function BoardShapes() {
   );
 }
 
+function loupePosition(cx: number, cy: number, unitPx: number) {
+  // ルーペに映すボード座標の幅
+  const span = LOUPE_PX / unitPx / LOUPE_ZOOM;
+  const h = LOUPE_PX + LOUPE_LABEL;
+  const above = cy - LOUPE_GAP - h;
+  if (above >= 4) return { left: cx - LOUPE_PX / 2, top: above, span };
+  const top = Math.min(Math.max(4, cy - h / 2), window.innerHeight - h - 4);
+  const leftSide = cx - LOUPE_GAP - LOUPE_PX;
+  if (leftSide >= 4) return { left: leftSide, top, span };
+  return { left: cx + LOUPE_GAP, top, span };
+}
+
 interface Props {
   onDart: (d: Dart) => void;
   highlight?: Dart[];
@@ -112,13 +124,9 @@ export function Board({ onDart, highlight = [], target, disabled }: Props) {
   const cancel = () => setTouch(null);
 
   const current = touch ? hitTest(touch.x, touch.y) : null;
-  // ルーペはボードの外（画面に固定）に描き、どこを押しても常に指の真上に出す
-  const loupe = touch && {
-    left: touch.cx - LOUPE_PX / 2,
-    top: Math.max(4, touch.cy - LOUPE_GAP - LOUPE_PX - LOUPE_LABEL),
-    // ルーペに映すボード座標の幅
-    span: LOUPE_PX / touch.unitPx / LOUPE_ZOOM,
-  };
+  // ルーペはボードの外（画面に固定）に描き、指の真上に出す。
+  // 横向きなどで上に入りきらないときは、指の横（左、だめなら右）に出す
+  const loupe = touch && loupePosition(touch.cx, touch.cy, touch.unitPx);
 
   return (
     <div class="board-wrap">
