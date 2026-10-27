@@ -31,8 +31,17 @@ export interface Settings {
   effects: 'full' | 'lite' | 'off';
   autoAdvance: boolean;
   defaultBull: BullMode;
+  /** 英語のアナウンス音声 */
+  announce: boolean;
 }
-export const DEFAULT_SETTINGS: Settings = { sfx: true, volume: 0.7, effects: 'full', autoAdvance: true, defaultBull: 'fat' };
+export const DEFAULT_SETTINGS: Settings = {
+  sfx: true,
+  volume: 0.7,
+  effects: 'full',
+  autoAdvance: true,
+  defaultBull: 'fat',
+  announce: true,
+};
 
 export interface ExportData {
   app: 'darts-scorer';

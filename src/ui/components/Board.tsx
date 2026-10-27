@@ -71,10 +71,12 @@ function BoardShapes() {
 interface Props {
   onDart: (d: Dart) => void;
   highlight?: Dart[];
+  /** 次に狙うエリア（上がり目）。点滅させる */
+  target?: Dart | null;
   disabled?: boolean;
 }
 
-export function Board({ onDart, highlight = [], disabled }: Props) {
+export function Board({ onDart, highlight = [], target, disabled }: Props) {
   const ref = useRef<SVGSVGElement>(null);
   const [touch, setTouch] = useState<{ x: number; y: number } | null>(null);
   const shapes = useMemo(() => <BoardShapes />, []);
@@ -125,6 +127,7 @@ export function Board({ onDart, highlight = [], disabled }: Props) {
           </clipPath>
         </defs>
         {shapes}
+        {target && areaPath(target) && <path d={areaPath(target)!} class="board-target" />}
         {highlight.map((d, i) => {
           const path = areaPath(d);
           return path ? <path key={i} d={path} class="board-hit" /> : null;

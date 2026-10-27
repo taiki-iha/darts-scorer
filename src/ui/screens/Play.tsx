@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { detectAward, BIG_AWARDS, type AwardId } from '../../awards/awards';
 import { playSfx, unlockAudio, type SfxName } from '../../audio/sfx';
-import { label, points } from '../../core/dart';
+import { announce, unlockVoice } from '../../audio/voice';
+import { label, parseLabel, points } from '../../core/dart';
 import type { Dart } from '../../core/types';
 import type { CricketState } from '../../games/cricket';
 import type { CountUpState } from '../../games/countup';
@@ -65,12 +66,20 @@ function pickEffect(prev: MatchState, next: MatchState, d: Dart | null): { effec
   return null;
 }
 
-function sfxFor(e: Effect | null): SfxName {
-  if (!e) return 'hit';
+function sfxFor(e: Effect | null, d: Dart | null): SfxName {
+  if (!e) return d && (d.ring === 'T' || d.ring === 'D') ? 'hitHigh' : 'hit';
   if (e === 'BULL') return 'bull';
   if (e === 'BUST') return 'bust';
   if (e === 'WIN' || e === 'GAME_SHOT') return 'win';
   return BIG_AWARDS.includes(e as AwardId) ? 'bigAward' : 'award';
+}
+
+let voiceReady = false;
+/** iOS の読み上げはユーザー操作の中で一度動かす必要がある */
+function unlockVoiceOnce() {
+  if (voiceReady) return;
+  voiceReady = true;
+  unlockVoice();
 }
 
 export function Play({ db, current, settings, onFinished, onQuit }: Props) {
@@ -79,6 +88,8 @@ export function Play({ db, current, settings, onFinished, onQuit }: Props) {
   const eventsRef = useRef(events);
   const [fx, setFx] = useState<{ effect: Effect; sub?: string } | null>(null);
   const [saveError, setSaveError] = useState(false);
+  // ブル・アワードでボードを揺らす（key を変えてアニメーションをやり直す）
+  const [bump, setBump] = useState(0);
   const state = useMemo(() => replay(current.config, events), [events]);
   const family = GAMES[current.config.gameId].family;
   const config = current.config;
@@ -94,8 +105,10 @@ export function Play({ db, current, settings, onFinished, onQuit }: Props) {
     );
     if (effectFor === undefined) return;
     const picked = pickEffect(replay(config, prev), replay(config, next), effectFor);
-    if (settings.sfx && (picked || effectFor)) playSfx(sfxFor(picked?.effect ?? null), settings.volume);
+    if (settings.sfx && (picked || effectFor)) playSfx(sfxFor(picked?.effect ?? null, effectFor), settings.volume);
+    if (settings.announce && picked) announce(picked.effect, settings.volume, picked.effect === 'BUST' ? 150 : 450);
     setFx(picked && settings.effects !== 'off' ? picked : null);
+    if (picked && settings.effects === 'full' && picked.effect !== 'BUST') setBump((b) => b + 1);
   };
 
   const onDart = (d: Dart) => {
@@ -184,6 +197,7 @@ export function Play({ db, current, settings, onFinished, onQuit }: Props) {
     <div
       class="play"
       onPointerDown={unlockAudio}
+      onTouchEnd={unlockVoiceOnce}
       // ボタンにフォーカスを残さない（残ると Enter キーでクリックが二重に起きる）
       onMouseDown={(e) => (e.target as Element).closest('button') && e.preventDefault()}
     >
@@ -208,7 +222,18 @@ export function Play({ db, current, settings, onFinished, onQuit }: Props) {
               {showMember ? `${names[side]} / ${player.name}` : player.name}
             </div>
             <div class="now-score">{scores[side]}</div>
-            {hint && <div class="hint">{hint.join(' → ')}</div>}
+            {hint && (
+              <div class="checkout">
+                <div class="checkout-label">CHECKOUT</div>
+                <div class="checkout-darts">
+                  {hint.map((h, i) => (
+                    <span key={i} class={i === 0 ? 'now' : ''}>
+                      {h}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {family === 'cricket' ? (
@@ -228,7 +253,9 @@ export function Play({ db, current, settings, onFinished, onQuit }: Props) {
         </section>
 
         <section class="play-board">
-          <Board onDart={onDart} highlight={state.turnDarts} disabled={state.legOver} />
+          <div key={bump} class={bump ? 'board-bump' : ''}>
+          <Board onDart={onDart} highlight={state.turnDarts} target={hint ? parseLabel(hint[0]) : null} disabled={state.legOver} />
+          </div>
           <div class="actions">
             <button class="btn" onClick={() => onDart({ ring: 'MISS', num: 0 })} disabled={state.legOver}>
               MISS

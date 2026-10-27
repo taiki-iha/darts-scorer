@@ -114,7 +114,12 @@ export function checkoutHint(remaining: number, out: InOut, bull: BullMode, maxD
       }
     };
     search([], remaining);
-    if (best) return (best as { darts: Dart[] }).darts.map(label);
+    if (best) {
+      const darts = (best as { darts: Dart[] }).darts;
+      // open out は最後の1本に条件がないので、大きい的から狙う順に並べる
+      if (out === 'open') darts.sort((x, y) => points(y, bull) - points(x, bull));
+      return darts.map(label);
+    }
   }
   return null;
 }

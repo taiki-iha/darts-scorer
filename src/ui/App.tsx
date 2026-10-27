@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { unlockAudio } from '../audio/sfx';
+import { unlockVoice } from '../audio/voice';
 import type { GameId, GameOptions } from '../games/types';
 import { recordFromCurrent } from '../match/input';
 import type { MatchConfig } from '../match/types';
@@ -39,6 +40,7 @@ export function App() {
 
   const start = async (config: MatchConfig) => {
     unlockAudio();
+    unlockVoice();
     if (ctx.current) {
       // 決着済みで「結果を見る」を押さずに抜けた試合は、記録として残してから置き換える
       const rec = recordFromCurrent(ctx.current, Date.now());
@@ -116,6 +118,7 @@ export function App() {
           hasCurrent={!!ctx.current}
           onResume={() => {
             unlockAudio();
+            unlockVoice();
             setScreen('play');
           }}
           onNavigate={setScreen}

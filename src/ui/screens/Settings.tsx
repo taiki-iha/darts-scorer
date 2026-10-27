@@ -79,6 +79,15 @@ export function SettingsScreen({ db, settings, onChange, onBack }: Props) {
           value={s.volume}
           onChange={(e) => update({ ...s, volume: Number((e.target as HTMLInputElement).value) })}
         />
+        <label>アナウンス音声（英語）</label>
+        <Seg
+          items={[
+            { v: 1, l: 'ON' },
+            { v: 0, l: 'OFF' },
+          ]}
+          value={s.announce ? 1 : 0}
+          onChange={(v) => update({ ...s, announce: v === 1 })}
+        />
         <label>演出</label>
         <Seg
           items={[

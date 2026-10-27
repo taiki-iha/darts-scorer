@@ -111,6 +111,11 @@ describe('checkoutHint', () => {
     expect(checkoutHint(40, 'double', 'fat', 1)).toEqual(['D20']);
     expect(checkoutHint(170, 'double', 'fat', 2)).toBeNull();
   });
+  test('open out lists bigger darts first', () => {
+    const h = checkoutHint(91, 'open', 'fat', 2)!;
+    expect(h).toHaveLength(2);
+    expect(h[0].startsWith('T')).toBe(true);
+  });
   test('open out', () => {
     expect(checkoutHint(50, 'open', 'fat')).toEqual(['BULL']);
     expect(checkoutHint(180, 'open', 'fat')).toBeNull();

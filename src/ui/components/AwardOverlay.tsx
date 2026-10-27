@@ -4,6 +4,17 @@ import type { Settings } from '../../storage/db';
 
 export type Effect = AwardId | MinorEffect;
 
+const COLORS = ['#00e5ff', '#ff2bd6', '#ffe14d', '#ffffff', '#39ff14'];
+/** 紙吹雪（位置・色・速さはランダムだが、毎回同じ並びで十分なので一度だけ作る） */
+const CONFETTI = Array.from({ length: 48 }, (_, i) => ({
+  left: `${(i * 37) % 100}%`,
+  background: COLORS[i % COLORS.length],
+  animationDelay: `${((i * 13) % 10) * 0.05}s`,
+  animationDuration: `${1.4 + ((i * 7) % 10) * 0.08}s`,
+  '--rx': `${(i % 2 ? 1 : -1) * (180 + ((i * 29) % 360))}deg`,
+  '--dx': `${((i * 17) % 60) - 30}px`,
+}));
+
 const MINOR_LABEL: Record<MinorEffect, string> = {
   BULL: 'BULL!',
   BUST: 'BUST',
@@ -47,6 +58,14 @@ export function AwardOverlay({ effect, sub, onDone, level }: Props) {
         <div class="fx-rays">
           {Array.from({ length: 12 }, (_, i) => (
             <span key={i} style={{ transform: `rotate(${i * 30}deg)` }} />
+          ))}
+        </div>
+      )}
+      {level === 'full' && k !== 'small' && <div class="fx-flash" />}
+      {level === 'full' && k === 'big' && (
+        <div class="fx-confetti">
+          {CONFETTI.map((c, i) => (
+            <i key={i} style={c} />
           ))}
         </div>
       )}

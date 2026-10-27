@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { dart, label, multiplier, points } from './dart';
+import { dart, label, multiplier, parseLabel, points } from './dart';
 
 describe('points', () => {
   test('numbers and multipliers', () => {
@@ -32,4 +32,11 @@ test('label', () => {
   expect(label(dart('SB'))).toBe('BULL');
   expect(label(dart('DB'))).toBe('D-BULL');
   expect(label(dart('MISS'))).toBe('MISS');
+});
+
+test('parseLabel is the inverse of label', () => {
+  for (const d of [dart('T', 20), dart('D', 16), dart('S', 5), dart('SB'), dart('DB'), dart('MISS')]) {
+    expect(parseLabel(label(d))).toEqual(d);
+  }
+  expect(parseLabel('X9')).toBeNull();
 });

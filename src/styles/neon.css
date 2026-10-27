@@ -142,7 +142,17 @@ button { font: inherit; color: inherit; }
 .now { text-align: center; }
 .now-name { color: #ff7be9; font-weight: 700; text-shadow: 0 0 8px var(--magenta); }
 .now-score { font-size: 64px; line-height: 1; font-weight: 900; color: var(--cyan); text-shadow: 0 0 14px var(--cyan); font-variant-numeric: tabular-nums; }
-.hint { margin-top: 4px; color: var(--yellow); font-weight: 700; font-size: 14px; }
+.checkout {
+  margin: 6px auto 0; max-width: 420px; padding: 6px 10px; border-radius: 12px; text-align: center;
+  background: linear-gradient(90deg, #3a0c4a, #0d0730 50%, #3a0c4a); border: 1px solid var(--magenta);
+  box-shadow: 0 0 16px #ff2bd655; animation: fx-pop 0.3s ease-out both;
+}
+.checkout-label { font-size: 11px; letter-spacing: 4px; color: var(--yellow); font-weight: 900; text-shadow: 0 0 6px var(--yellow); }
+.checkout-darts { display: flex; justify-content: center; gap: 14px; font-size: 26px; font-weight: 900; color: #fff; letter-spacing: 1px; }
+.checkout-darts span { opacity: 0.75; }
+.checkout-darts span.now { opacity: 1; color: var(--yellow); text-shadow: 0 0 10px var(--yellow); }
+.board-target { fill: var(--yellow); stroke: #fff; stroke-width: 0.012; animation: target-pulse 0.9s ease-in-out infinite; pointer-events: none; }
+@keyframes target-pulse { 50% { opacity: 0.2; } }
 
 .sides { display: flex; gap: 6px; overflow-x: auto; padding: 4px 2px; }
 .side { flex: 1 0 70px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px 6px; text-align: center; }
@@ -207,6 +217,18 @@ button { font: inherit; color: inherit; }
   box-shadow: 0 0 10px var(--magenta), 0 0 20px var(--cyan);
   transform: rotate(var(--a)) translateX(0); animation: fx-spark 1.2s var(--d) ease-out infinite;
 }
+.fx-flash { position: absolute; inset: 0; background: #fff; animation: fx-flash 0.45s ease-out both; pointer-events: none; }
+.fx-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.fx-confetti i {
+  position: absolute; top: -20px; width: 8px; height: 14px; border-radius: 2px; opacity: 0.9;
+  animation-name: fx-fall; animation-timing-function: linear; animation-fill-mode: both;
+}
+.board-bump { animation: board-bump 0.45s ease-out; }
+.board-bump .board { animation: board-glow 0.6s ease-out; }
+@keyframes fx-flash { from { opacity: 0.85; } to { opacity: 0; } }
+@keyframes fx-fall { to { transform: translate(var(--dx), 110vh) rotate(var(--rx)); } }
+@keyframes board-bump { 0% { transform: scale(1); } 15% { transform: scale(1.04) translate(-4px, 2px); } 30% { transform: scale(0.99) translate(4px, -2px); } 45% { transform: translate(-2px, 1px); } 100% { transform: none; } }
+@keyframes board-glow { 0% { filter: drop-shadow(0 0 0 #fff) brightness(1); } 20% { filter: drop-shadow(0 0 24px #00e5ff) brightness(1.6); } 100% { filter: none; } }
 @keyframes fx-bg { from { opacity: 0; } }
 @keyframes fx-pop { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes fx-flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } 52% { opacity: 1; } }

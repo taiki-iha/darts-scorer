@@ -41,3 +41,15 @@ export function label(d: Dart): string {
       return `${d.ring}${d.num}`;
   }
 }
+
+/** label() の逆。上がり目ヒントの表記からボード上のエリアを求める */
+export function parseLabel(s: string): Dart | null {
+  if (s === 'BULL') return dart('SB');
+  if (s === 'D-BULL') return dart('DB');
+  if (s === 'MISS') return dart('MISS');
+  const m = /^([DT]?)(\d{1,2})$/.exec(s);
+  if (!m) return null;
+  const n = Number(m[2]);
+  if (n < 1 || n > 20) return null;
+  return dart((m[1] || 'S') as 'S' | 'D' | 'T', n);
+}

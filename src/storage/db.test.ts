@@ -64,7 +64,7 @@ describe('settings', () => {
   test('defaults then saved', async () => {
     const db = await fresh();
     expect(await db.getSettings()).toEqual(DEFAULT_SETTINGS);
-    expect(DEFAULT_SETTINGS).toEqual({ sfx: true, volume: 0.7, effects: 'full', autoAdvance: true, defaultBull: 'fat' });
+    expect(DEFAULT_SETTINGS).toEqual({ sfx: true, volume: 0.7, effects: 'full', autoAdvance: true, defaultBull: 'fat', announce: true });
     await db.setSettings({ ...DEFAULT_SETTINGS, sfx: false });
     expect((await db.getSettings()).sfx).toBe(false);
   });
